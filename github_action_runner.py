@@ -3,7 +3,7 @@ import json
 import smtplib
 from email.mime.text import MIMEText
 from email.header import Header
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 from bs4 import BeautifulSoup
 
@@ -174,10 +174,13 @@ def main():
     if not os.path.exists(public_dir):
         os.makedirs(public_dir)
     
+    # GitHub Actions 运行在 UTC 时区，需要转换为北京时间 (UTC+8)
+    beijing_time = datetime.utcnow() + timedelta(hours=8)
+    
     data = {
         "rsi": rsi,
         "price": price,
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " (GitHub Actions)"
+        "timestamp": beijing_time.strftime("%Y-%m-%d %H:%M:%S") + " (GitHub Actions)"
     }
     
     with open(os.path.join(public_dir, "data.json"), "w", encoding="utf-8") as f:
