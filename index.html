@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>红利低波ETF (512890) RSI 监控</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --success-color: #2ecc71;
+            --warning-color: #e74c3c;
+            --neutral-color: #95a5a6;
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --shadow-color: rgba(0,0,0,0.08);
+            --border-color: #ecf0f1;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary-color: #5dade2;
+                --success-color: #4cd137;
+                --warning-color: #ff6b6b;
+                --neutral-color: #7f8c8d;
+                --bg-color: #1a1d21;
+                --card-bg: #2c3035;
+                --text-color: #ecf0f1;
+                --text-secondary: #bdc3c7;
+                --shadow-color: rgba(0,0,0,0.3);
+                --border-color: #34495e;
+            }
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-title h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .header-title .subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        .status-badge {
+            background: var(--card-bg);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: 0 2px 10px var(--shadow-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--success-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.4); }
+            70% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(46, 204, 113, 0); }
+            100% { opacity: 1; box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+        }
+
+        /* Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+        }
+
+        @media (min-width: 850px) {
+            .dashboard-grid {
+                grid-template-columns: 2fr 1fr;
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 10px 30px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Main RSI Card */
+        .rsi-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 40px;
+            padding-bottom: 30px;
+        }
+
+        /* Circular Progress Ring */
+        .ring-wrapper {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ring-svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .ring-bg {
+            fill: none;
+            stroke: var(--bg-color); /* Use page bg color for track */
+            stroke-width: 12;
+        }
+
+        /* Dark mode adjustment for ring track */
+        @media (prefers-color-scheme: dark) {
+            .ring-bg {
+                stroke: rgba(255,255,255,0.05);
+            }
+        }
+
+        .ring-progress {
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease;
+            filter: drop-shadow(0 0 4px rgba(0,0,0,0.1));
+        }
+
+        .ring-content {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .rsi-number {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1;
+            color: var(--text-color);
+            letter-spacing: -2px;
+        }
+
+        .rsi-label-inner {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .rsi-status-text {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-top: 5px;
+            padding: 8px 24px;
+            border-radius: 50px;
+            display: inline-block;
+            /* Neumorphic style flat shadow */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            border: 1px solid transparent;
+        }
+
+        .status-buy { 
+            color: var(--success-color); 
+            background: rgba(46, 204, 113, 0.08); 
+            border-color: rgba(46, 204, 113, 0.2);
+        }
+        .status-sell { 
+            color: var(--warning-color); 
+            background: rgba(231, 76, 60, 0.08); 
+            border-color: rgba(231, 76, 60, 0.2);
+        }
+        .status-neutral { 
+            color: var(--neutral-color); 
+            background: rgba(149, 165, 166, 0.08); 
+            border-color: rgba(149, 165, 166, 0.2);
+        }
+
+        .market-info {
+            margin-top: 25px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 25px;
+        }
+
+        .price-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .price-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .price-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .kline-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 30px;
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            width: 80%;
+            max-width: 300px;
+        }
+
+        .kline-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        /* Side Column */
+        .side-column {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            height: 100%;
+        }
+
+        .side-column .card:last-child {
+            flex: 1;
+        }
+
+        .subscribe-card {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.05) 0%, rgba(52, 152, 219, 0.1) 100%);
+            border: 1px solid rgba(52, 152, 219, 0.2);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .subscribe-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .subscribe-input {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .subscribe-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .subscribe-btn {
+            padding: 12px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .subscribe-btn:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .subscribe-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .form-status {
+            font-size: 0.85rem;
+            margin-top: 10px;
+            min-height: 20px;
+        }
+        .form-status.success { color: var(--success-color); }
+        .form-status.error { color: var(--warning-color); }
+
+        .info-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .info-list li {
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            display: flex;
+            gap: 10px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 6px;
+            flex-shrink: 0;
+        }
+
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            padding-bottom: 20px;
+        }
+
+        .footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--card-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            transition: opacity 0.3s;
+        }
+        .hidden { opacity: 0; pointer-events: none; }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-title">
+                <h1>红利低波ETF (512890)</h1>
+                <div class="subtitle">RSI 趋势智能监控面板</div>
+            </div>
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                <span id="update-time-badge">更新中...</span>
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- Left Column: Main Monitor -->
+            <div class="card rsi-card">
+                <div class="loading-overlay" id="loading-overlay">
+                    <div>加载数据中...</div>
+                </div>
+
+                <div class="ring-wrapper">
+                    <svg class="ring-svg" viewBox="0 0 200 200">
+                        <!-- Background Track -->
+                        <circle class="ring-bg" cx="100" cy="100" r="85"></circle>
+                        <!-- Progress Ring -->
+                        <circle class="ring-progress" id="rsi-ring" cx="100" cy="100" r="85"></circle>
+                    </svg>
+                    
+                    <div class="ring-content">
+                        <div class="rsi-number" id="rsi-value">--</div>
+                        <div class="rsi-label-inner">RSI (14)</div>
+                    </div>
+                </div>
+
+                <div class="rsi-status-text" id="rsi-status">等待数据...</div>
+
+                <div class="market-info">
+                    <div class="price-display">
+                        <div class="price-label">当前价格</div>
+                        <div class="price-value" id="price-value">--</div>
+                    </div>
+                    
+                    <a href="https://cn.investing.com/etfs/huatai-pinebridge-csi-div-low-vol-technical" target="_blank" class="kline-btn">
+                        📈 查看实时 K 线图
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Column: Sidebar -->
+            <div class="side-column">
+                <!-- Subscribe Card -->
+                <div class="card subscribe-card">
+                    <div class="card-title">
+                        <span>🔔</span> 邮件提醒订阅
+                    </div>
+                    <form id="subscribe-form" action="https://formspree.io/f/xzzqlybo" method="POST" class="subscribe-form">
+                        <input type="email" name="email" class="subscribe-input" placeholder="输入您的邮箱地址" required>
+                        <button type="submit" class="subscribe-btn">立即订阅</button>
+                    </form>
+                    <div id="form-status" class="form-status"></div>
+                    <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 5px;">
+                        * 触发买卖点时自动发送邮件通知
+                    </div>
+                </div>
+
+                <!-- Info Card -->
+                <div class="card">
+                    <div class="card-title">
+                        <span>💡</span> 指标说明
+                    </div>
+                    <ul class="info-list">
+                        <li>
+                            <div class="dot" style="background: var(--success-color)"></div>
+                            <div><strong>RSI < 40 (超卖)</strong><br>市场可能过度下跌，关注买入机会。</div>
+                        </li>
+                        <li>
+                            <div class="dot" style="background: var(--warning-color)"></div>
+                            <div><strong>RSI > 70 (超买)</strong><br>市场可能过度上涨，注意回调风险。</div>
+                        </li>
+                        <li>
+                            <div class="dot" style="background: var(--neutral-color)"></div>
+                            <div><strong>40 - 70 (中性)</strong><br>市场处于正常波动范围，建议观望。</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div style="margin-bottom: 8px;">数据来源: Investing.com | Powered by GitHub Actions & Pages</div>
+            <div style="display: flex; justify-content: center; align-items: center; gap: 15px;">
+                <a href="https://github.com/Pear56/JTrading" target="_blank" style="display: inline-flex; align-items: center; gap: 5px;">
+                    <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" style="opacity: 0.8;">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+                    </svg>
+                    GitHub 源码
+                </a>
+                <span style="opacity: 0.3">|</span>
+                <a href="mailto:pear56@126.com">联系作者</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // UI Elements
+        const els = {
+            rsiValue: document.getElementById('rsi-value'),
+            rsiStatus: document.getElementById('rsi-status'),
+            priceValue: document.getElementById('price-value'),
+            updateBadge: document.getElementById('update-time-badge'),
+            ring: document.getElementById('rsi-ring'),
+            loading: document.getElementById('loading-overlay'),
+            form: document.getElementById('subscribe-form'),
+            formStatus: document.getElementById('form-status')
+        };
+
+        function updateUI(data) {
+            els.loading.classList.add('hidden');
+
+            if (!data || data.rsi === null || data.rsi === "找不到") {
+                els.rsiValue.textContent = "N/A";
+                els.rsiStatus.textContent = "数据不可用";
+                return;
+            }
+
+            const rsi = parseFloat(data.rsi);
+            els.rsiValue.textContent = rsi.toFixed(2);
+
+            // Update Price
+            els.priceValue.textContent = data.price ? "¥" + data.price.toFixed(3) : "--";
+
+            // Update Ring Progress
+            // r = 85, circumference = 2 * PI * 85 ≈ 534
+            const radius = 85;
+            const circumference = 2 * Math.PI * radius;
+            
+            // Set dasharray only once if not set
+            if (!els.ring.style.strokeDasharray) {
+                els.ring.style.strokeDasharray = `${circumference} ${circumference}`;
+            }
+
+            // Calculate offset
+            // offset = circumference - (percent / 100) * circumference
+            const percent = Math.max(0, Math.min(100, rsi));
+            const offset = circumference - (percent / 100) * circumference;
+            els.ring.style.strokeDashoffset = offset;
+
+            // Update Colors & Status
+            if (rsi < 40) {
+                els.rsiStatus.textContent = "建议买入 (超卖)";
+                els.rsiStatus.className = "rsi-status-text status-buy";
+                els.ring.style.stroke = "var(--success-color)";
+            } else if (rsi > 70) {
+                els.rsiStatus.textContent = "建议卖出 (超买)";
+                els.rsiStatus.className = "rsi-status-text status-sell";
+                els.ring.style.stroke = "var(--warning-color)";
+            } else {
+                els.rsiStatus.textContent = "观望 (中性)";
+                els.rsiStatus.className = "rsi-status-text status-neutral";
+                els.ring.style.stroke = "var(--neutral-color)";
+            }
+
+            // Update Time
+            let timeStr = data.timestamp || "未知";
+            try {
+                let cleanTime = timeStr.replace(" (GitHub Actions)", "").trim();
+                const isoTime = cleanTime.replace(" ", "T") + "+08:00";
+                const updateDate = new Date(isoTime);
+                const now = new Date();
+                const diffMins = Math.floor((now - updateDate) / 60000);
+                
+                if (!isNaN(diffMins)) {
+                    if (diffMins < 1) timeStr = "刚刚更新";
+                    else if (diffMins < 60) timeStr = `${diffMins} 分钟前更新`;
+                    else if (diffMins < 1440) timeStr = `${Math.floor(diffMins/60)} 小时前更新`;
+                    else timeStr = cleanTime.split(' ')[0];
+                }
+            } catch (e) { console.log(e); }
+            
+            els.updateBadge.textContent = timeStr;
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch('data.json');
+                if (!response.ok) throw new Error('Network error');
+                const data = await response.json();
+                updateUI(data);
+            } catch (error) {
+                console.error(error);
+                els.rsiStatus.textContent = "加载失败";
+                els.loading.classList.add('hidden');
+            }
+        }
+
+        // Form Handling
+        els.form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = els.form.querySelector('button');
+            const originalText = btn.textContent;
+            
+            btn.disabled = true;
+            btn.textContent = "提交中...";
+            
+            try {
+                const res = await fetch(e.target.action, {
+                    method: 'POST',
+                    body: new FormData(e.target),
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                if (res.ok) {
+                    els.formStatus.textContent = "✅ 订阅成功！";
+                    els.formStatus.className = "form-status success";
+                    els.form.reset();
+                } else {
+                    const data = await res.json();
+                    els.formStatus.textContent = "❌ " + (data.errors ? data.errors.map(e=>e.message).join(", ") : "提交失败");
+                    els.formStatus.className = "form-status error";
+                }
+            } catch (err) {
+                console.error('Submission error:', err);
+                els.formStatus.textContent = "❌ 网络错误 (详情见控制台)";
+                els.formStatus.className = "form-status error";
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+                setTimeout(() => {
+                    if (els.formStatus.className.includes('success')) {
+                        els.formStatus.textContent = "";
+                    }
+                }, 5000);
+            }
+        });
+
+        fetchData();
+    </script>
+</body>
+</html>
