@@ -34,11 +34,11 @@
 
 ```mermaid
 graph LR
-    A[GitHub Actions\n(定时任务)] -->|运行 Python 脚本| B(数据抓取 & 分析)
-    B -->|生成| C{RSI 信号判定}
-    C -->|触发阈值| D[发送通知\n(邮件/微信)]
-    C -->|更新数据| E[生成 data.json]
-    E -->|部署| F[GitHub Pages\n(静态托管)]
+    A["GitHub Actions\n(定时任务)"] -->|运行 Python 脚本| B("数据抓取 & 分析")
+    B -->|生成| C{"RSI 信号判定"}
+    C -->|触发阈值| D["发送通知\n(邮件/微信)"]
+    C -->|更新数据| E["生成 data.json"]
+    E -->|部署| F["GitHub Pages\n(静态托管)"]
     G[用户] -->|访问| F
     G -->|订阅| H[Formspree]
 ```
