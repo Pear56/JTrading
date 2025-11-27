@@ -691,7 +691,11 @@
             }
         });
 
+        // 初始加载
         fetchData();
+        
+        // 每小时自动刷新数据（与后端同步）
+        setInterval(fetchData, 60 * 60 * 1000);
     </script>
 </body>
 </html>
