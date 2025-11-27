@@ -509,6 +509,8 @@
         </div>
     </div>
 
+    <!-- 配置文件（由 GitHub Actions 自动生成） -->
+    <script src="config.js"></script>
     <script>
         // UI Elements
         const els = {
@@ -602,8 +604,11 @@
         }
 
         // Form Handling - 双重保险：Worker 优先，Formspree 备用
-        const WORKER_URL = '__SUBSCRIBE_WORKER_URL__';
-        const FORMSPREE_URL = 'https://formspree.io/f/__FORMSPREE_ID__'; // 备用方案
+        // 从 config.js 加载配置（由 GitHub Actions 生成）
+        // 如果 config.js 不存在，使用默认空值
+        const WORKER_URL = (typeof CONFIG !== 'undefined' && CONFIG.WORKER_URL) || '';
+        const FORMSPREE_ID = (typeof CONFIG !== 'undefined' && CONFIG.FORMSPREE_ID) || '';
+        const FORMSPREE_URL = FORMSPREE_ID ? `https://formspree.io/f/${FORMSPREE_ID}` : '';
         
         async function submitToWorker(email) {
             const res = await fetch(WORKER_URL, {
@@ -623,8 +628,8 @@
         
         async function submitToFormspree(email) {
             // 检查 Formspree 是否配置
-            if (FORMSPREE_URL.includes('__FORMSPREE_ID__')) {
-                throw new Error('订阅服务暂未开放，请稍后再试');
+            if (!FORMSPREE_URL) {
+                throw new Error('备用订阅服务未配置');
             }
             const res = await fetch(FORMSPREE_URL, {
                 method: 'POST',
@@ -653,7 +658,7 @@
             try {
                 let message;
                 // 优先尝试 Worker
-                if (WORKER_URL && !WORKER_URL.includes('__SUBSCRIBE_WORKER_URL__')) {
+                if (WORKER_URL) {
                     try {
                         message = await submitToWorker(email);
                     } catch (workerErr) {
@@ -661,9 +666,11 @@
                         // Worker 失败，回退到 Formspree
                         message = await submitToFormspree(email);
                     }
-                } else {
+                } else if (FORMSPREE_URL) {
                     // Worker 未配置，直接使用 Formspree
                     message = await submitToFormspree(email);
+                } else {
+                    throw new Error('订阅服务暂未开放，请稍后再试');
                 }
                 
                 els.formStatus.textContent = "✅ " + message;
