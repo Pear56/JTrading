@@ -624,7 +624,7 @@
         async function submitToFormspree(email) {
             // 检查 Formspree 是否配置
             if (FORMSPREE_URL.includes('__FORMSPREE_ID__')) {
-                throw new Error('备用服务未配置');
+                throw new Error('订阅服务暂未开放，请稍后再试');
             }
             const res = await fetch(FORMSPREE_URL, {
                 method: 'POST',
@@ -635,7 +635,7 @@
                 body: JSON.stringify({ email })
             });
             if (!res.ok) {
-                throw new Error('Formspree 提交失败');
+                throw new Error('提交失败，请稍后重试');
             }
             return '订阅请求已收到，我们会尽快处理！';
         }
