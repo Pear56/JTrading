@@ -14,16 +14,55 @@ SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.126.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", 465))
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
 SENDER_PASSWORD = os.environ.get("SENDER_PASSWORD")
-# 订阅者邮箱，多个邮箱用逗号分隔
-SUBSCRIBER_EMAILS = os.environ.get("SUBSCRIBER_EMAILS", "").split(",")
 # Server酱 Key
 SERVERCHAN_KEY = os.environ.get("SERVERCHAN_KEY")
+# Gist 订阅者列表配置
+GIST_SUBSCRIBERS_URL = os.environ.get("GIST_SUBSCRIBERS_URL")
+GIST_TOKEN = os.environ.get("GIST_TOKEN")
 
 # ==========================================
 # RSI 阈值配置
 # ==========================================
 RSI_BUY_THRESHOLD = int(os.environ.get("RSI_BUY_THRESHOLD", 40))
 RSI_SELL_THRESHOLD = int(os.environ.get("RSI_SELL_THRESHOLD", 70))
+
+def fetch_subscriber_emails():
+    """
+    从私有 Gist 获取订阅者邮箱列表
+    如果 Gist 配置不存在，则回退到环境变量 SUBSCRIBER_EMAILS
+    """
+    # 优先从 Gist 读取
+    if GIST_SUBSCRIBERS_URL and GIST_TOKEN:
+        try:
+            headers = {
+                'Authorization': f'token {GIST_TOKEN}',
+                'Accept': 'application/vnd.github.v3.raw'
+            }
+            response = requests.get(GIST_SUBSCRIBERS_URL, headers=headers, timeout=10)
+            if response.status_code == 200:
+                # 支持每行一个邮箱或逗号分隔
+                content = response.text.strip()
+                emails = []
+                for line in content.split('\n'):
+                    line = line.strip()
+                    if line and not line.startswith('#'):  # 忽略空行和注释
+                        # 支持逗号分隔的多个邮箱
+                        emails.extend([e.strip() for e in line.split(',') if e.strip()])
+                print(f"从 Gist 获取到 {len(emails)} 个订阅者邮箱")
+                return emails
+            else:
+                print(f"从 Gist 获取邮箱失败: HTTP {response.status_code}")
+        except Exception as e:
+            print(f"从 Gist 获取邮箱出错: {e}")
+    
+    # 回退到环境变量
+    fallback_emails = os.environ.get("SUBSCRIBER_EMAILS", "")
+    if fallback_emails:
+        emails = [e.strip() for e in fallback_emails.split(",") if e.strip()]
+        print(f"使用环境变量 SUBSCRIBER_EMAILS，共 {len(emails)} 个订阅者")
+        return emails
+    
+    return []
 
 def fetch_rsi_and_price():
     """
@@ -180,9 +219,9 @@ def main():
 
     if subject:
         print(f"触发条件，准备发送邮件: {subject}")
-        subscribers = [email.strip() for email in SUBSCRIBER_EMAILS if email.strip()]
+        subscribers = fetch_subscriber_emails()
         if not subscribers:
-            print("没有配置订阅者邮箱 (SUBSCRIBER_EMAILS)，无法发送。")
+            print("没有配置订阅者邮箱，无法发送。")
         
         for email in subscribers:
             send_email(email, subject, content)

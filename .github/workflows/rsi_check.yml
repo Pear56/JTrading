@@ -33,6 +33,8 @@ jobs:
         SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
         SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
         SUBSCRIBER_EMAILS: ${{ secrets.SUBSCRIBER_EMAILS }}
+        GIST_SUBSCRIBERS_URL: ${{ secrets.GIST_SUBSCRIBERS_URL }}
+        GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
         SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
         FORMSPREE_ENDPOINT: ${{ secrets.FORMSPREE_ENDPOINT }}
         # 如果使用非QQ邮箱，可以在 Secrets 中配置 SMTP_SERVER 和 SMTP_PORT
