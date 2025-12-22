@@ -74,7 +74,9 @@
 3. **边界约束**：买入阈值限制在 [20, 50]，卖出阈值限制在 [60, 90]。
 
 **波动率计算细节**：
-$$ \text{Volatility} = \text{StdDev}\left(\ln\left(\frac{P_t}{P_{t-1}}\right), 47\right) \times \sqrt{252} \times 100 $$
+$$
+\text{Volatility} = \operatorname{StdDev}\!\left(\ln \frac{P_t}{P_{t-1}},\,47\right)\sqrt{252}\times 100
+$$
 1. **对数收益率**：计算每日收盘价相对于前一日的自然对数收益率。
 2. **滚动标准差**：取过去 **47个交易日**（约2个月）的对数收益率计算样本标准差。
 3. **年化处理**：乘以 $\sqrt{252}$ 并转换为百分比。
