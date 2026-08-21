@@ -191,14 +191,6 @@ python backtest/generate_markdown_reports.py
  </picture>
 </a>
 
-<a href="https://www.star-history.com/?repos=Pear56%2FJTrading&type=date&legend=top-left">
-    <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Pear56%2FJTrading&type=Date&theme=dark" />
-        <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Pear56%2FJTrading&type=Date" />
-        <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Pear56%2FJTrading&type=Date" />
-    </picture>
-</a>
-
 ## 许可证
 
 [MIT License](https://opensource.org/licenses/MIT)
