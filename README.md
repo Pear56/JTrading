@@ -181,6 +181,15 @@ python backtest/generate_markdown_reports.py
 - 实盘需计入交易成本、滑点与执行时延
 
 ---
+## Star History
+
+<a href="https://www.star-history.com/?repos=Pear56%2FJTrading&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Pear56/JTrading&type=date&theme=dark&legend=top-left&sealed_token=omKm7IBeHu7s-e1FX_a9H-S7218b8qbrTWBhtHIfoyEPsSk3ZQMgV4dR5RJQHj6KyCQR9nTng5y3llI2GIsz5OtvnsfoHCFHyEITSMtdr4YodpXStFwBuA" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Pear56/JTrading&type=date&legend=top-left&sealed_token=omKm7IBeHu7s-e1FX_a9H-S7218b8qbrTWBhtHIfoyEPsSk3ZQMgV4dR5RJQHj6KyCQR9nTng5y3llI2GIsz5OtvnsfoHCFHyEITSMtdr4YodpXStFwBuA" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Pear56/JTrading&type=date&legend=top-left&sealed_token=omKm7IBeHu7s-e1FX_a9H-S7218b8qbrTWBhtHIfoyEPsSk3ZQMgV4dR5RJQHj6KyCQR9nTng5y3llI2GIsz5OtvnsfoHCFHyEITSMtdr4YodpXStFwBuA" />
+ </picture>
+</a>
 
 <a href="https://www.star-history.com/?repos=Pear56%2FJTrading&type=date&legend=top-left">
     <picture>
