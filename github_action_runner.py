@@ -175,6 +175,69 @@ def compute_dynamic_signal(rsi_value, close_series, params):
         "signal_color": signal_color,
     }
 
+
+def build_trade_alert(
+    action,
+    rsi,
+    price,
+    market_date,
+    period,
+    buy_threshold,
+    sell_threshold,
+    backtest_return,
+    backtest_annual,
+    strategy_name,
+    subject_prefix="",
+    volatility=None,
+    threshold_digits=2,
+):
+    """按策略构建一封买卖提醒；持有状态不应调用此函数。"""
+    is_buy = action == "买入"
+    threshold = buy_threshold if is_buy else sell_threshold
+    direction = "低于" if is_buy else "高于"
+    suggestion = "建议关注买入机会" if is_buy else "建议关注卖出风险"
+    subject = (
+        f"【{subject_prefix}{action}提醒】{ETF_NAME} "
+        f"RSI{direction}{format_number(threshold, threshold_digits)}"
+    )
+
+    volatility_line = ""
+    if volatility is not None:
+        volatility_line = f"\n- 当前年化波动率: {format_number(volatility, 2)}%"
+
+    content = f"""当前{ETF_NAME} ({ETF_CODE}) 的 RSI({period}) EMA 为 {rsi:.2f}，已{direction} {format_number(threshold, threshold_digits)}，{suggestion}。
+
+📊 {strategy_name}参数:
+- RSI周期: {period}日 (EMA平滑)
+- 买入阈值: RSI < {format_number(buy_threshold, threshold_digits)}
+- 卖出阈值: RSI > {format_number(sell_threshold, threshold_digits)}{volatility_line}
+
+💰 回测表现:
+- 总收益: {backtest_return}
+- 年化收益: {backtest_annual}
+
+当前价格: {price}
+项目网页: {PROJECT_URL}"""
+
+    return {
+        "subject": subject,
+        "content": content,
+        "context": {
+            "action": action,
+            "strategy_name": strategy_name,
+            "rsi": rsi,
+            "price": price,
+            "market_date": market_date,
+            "period": period,
+            "buy_threshold": buy_threshold,
+            "sell_threshold": sell_threshold,
+            "threshold_digits": threshold_digits,
+            "volatility": volatility,
+            "backtest_return": backtest_return,
+            "backtest_annual": backtest_annual,
+        },
+    }
+
 def parse_subscriber_emails(content, include_pending=False):
     """解析订阅者邮箱，支持换行、逗号/分号分隔和 [pending]/[confirmed] 标记。"""
     emails = []
@@ -566,6 +629,7 @@ def build_alert_message(to_header, subject, content, alert_context=None):
 
     if is_trade_alert:
         is_buy = action == "买入"
+        strategy_name = escape(str(alert_context.get("strategy_name") or "经典回测策略"))
         accent = "#16a34a" if is_buy else "#dc2626"
         accent_dark = "#166534" if is_buy else "#991b1b"
         accent_bg = "#ecfdf3" if is_buy else "#fef2f2"
@@ -577,9 +641,17 @@ def build_alert_message(to_header, subject, content, alert_context=None):
         price_text = format_number(alert_context.get("price"), 4)
         period_text = escape(str(alert_context.get("period") or RSI_PERIOD))
         market_date = escape(str(alert_context.get("market_date") or "--"))
-        buy_threshold = format_number(alert_context.get("buy_threshold"), 0)
-        sell_threshold = format_number(alert_context.get("sell_threshold"), 0)
-        threshold_text = format_number(threshold_value, 0)
+        threshold_digits = int(alert_context.get("threshold_digits", 2))
+        buy_threshold = format_number(alert_context.get("buy_threshold"), threshold_digits)
+        sell_threshold = format_number(alert_context.get("sell_threshold"), threshold_digits)
+        threshold_text = format_number(threshold_value, threshold_digits)
+        volatility = alert_context.get("volatility")
+        volatility_html = ""
+        if volatility is not None:
+            volatility_html = (
+                '<p style="margin: 0 0 6px; font-size: 14px; line-height: 1.6; color: #4b5563;">'
+                f"当前年化波动率：{format_number(volatility, 2)}%</p>"
+            )
         backtest_return = escape(str(alert_context.get("backtest_return") or "--"))
         backtest_annual = escape(str(alert_context.get("backtest_annual") or "--"))
         page_url = escape(PROJECT_URL, quote=True)
@@ -592,7 +664,7 @@ def build_alert_message(to_header, subject, content, alert_context=None):
         body_html = f"""
             <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">{preheader}</div>
             <div style="background: {accent_bg}; border: 1px solid {accent}; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px;">
-                <div style="font-size: 13px; font-weight: 700; color: {accent_dark}; margin-bottom: 8px;">{action}提醒</div>
+                <div style="font-size: 13px; font-weight: 700; color: {accent_dark}; margin-bottom: 8px;">{strategy_name} · {action}提醒</div>
                 <h1 style="margin: 0 0 8px; font-size: 24px; line-height: 1.3; color: #111827;">{headline}</h1>
                 <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #374151;">{summary}</p>
             </div>
@@ -625,8 +697,9 @@ def build_alert_message(to_header, subject, content, alert_context=None):
             </table>
 
             <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px;">
-                <div style="font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 8px;">策略参考</div>
+                <div style="font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 8px;">{strategy_name}参考</div>
                 <p style="margin: 0 0 6px; font-size: 14px; line-height: 1.6; color: #4b5563;">触发条件：{threshold_label}，{direction}。</p>
+                {volatility_html}
                 <p style="margin: 0 0 6px; font-size: 14px; line-height: 1.6; color: #4b5563;">数据日期：{market_date}</p>
                 <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #4b5563;">回测表现：总收益 {backtest_return}，年化 {backtest_annual}</p>
             </div>
@@ -772,75 +845,60 @@ def main():
     backtest_summary = load_backtest_summary()
     classic_return = format_percent(backtest_summary["classic_total"])
     classic_annual = format_percent(backtest_summary["classic_annual"])
-    subject = ""
-    content = ""
-    alert_context = None
+    dynamic_return = format_percent(backtest_summary["dynamic_total"])
+    dynamic_annual = format_percent(backtest_summary["dynamic_annual"])
+    dynamic_params = load_dynamic_params()
+    close_series = market_df["close"] if market_df is not None else None
+    dynamic_rsi = rsi
+    if close_series is not None and dynamic_params["rsi_period"] != RSI_PERIOD:
+        dynamic_rsi_series = calculate_rsi_ema(close_series, dynamic_params["rsi_period"])
+        latest_dynamic_rsi = dynamic_rsi_series.iloc[-1]
+        dynamic_rsi = float(latest_dynamic_rsi) if pd.notna(latest_dynamic_rsi) else None
+    dynamic_signal = compute_dynamic_signal(dynamic_rsi, close_series, dynamic_params)
+    alerts = []
 
     if rsi < RSI_BUY_THRESHOLD:
-        subject = f"【买入提醒】{ETF_NAME} RSI低于{RSI_BUY_THRESHOLD}"
-        content = f"""当前{ETF_NAME} ({ETF_CODE}) 的 RSI({RSI_PERIOD}) EMA 为 {rsi:.2f}，已低于 {RSI_BUY_THRESHOLD}，建议关注买入机会。
-
-📊 策略参数:
-- RSI周期: {RSI_PERIOD}日 (EMA平滑)
-- 买入阈值: RSI < {RSI_BUY_THRESHOLD}
-- 卖出阈值: RSI > {RSI_SELL_THRESHOLD}
-
-💰 回测表现:
-- 总收益: {classic_return}
-- 年化收益: {classic_annual}
-
-当前价格: {price}
-项目网页: {PROJECT_URL}"""
-        alert_context = {
-            "action": "买入",
-            "rsi": rsi,
-            "price": price,
-            "market_date": latest_date,
-            "period": RSI_PERIOD,
-            "buy_threshold": RSI_BUY_THRESHOLD,
-            "sell_threshold": RSI_SELL_THRESHOLD,
-            "backtest_return": classic_return,
-            "backtest_annual": classic_annual,
-        }
+        classic_signal = "买入"
     elif rsi > RSI_SELL_THRESHOLD:
-        subject = f"【卖出提醒】{ETF_NAME} RSI高于{RSI_SELL_THRESHOLD}"
-        content = f"""当前{ETF_NAME} ({ETF_CODE}) 的 RSI({RSI_PERIOD}) EMA 为 {rsi:.2f}，已高于 {RSI_SELL_THRESHOLD}，建议关注卖出风险。
-
-📊 策略参数:
-- RSI周期: {RSI_PERIOD}日 (EMA平滑)
-- 买入阈值: RSI < {RSI_BUY_THRESHOLD}
-- 卖出阈值: RSI > {RSI_SELL_THRESHOLD}
-
-💰 回测表现:
-- 总收益: {classic_return}
-- 年化收益: {classic_annual}
-
-当前价格: {price}
-项目网页: {PROJECT_URL}"""
-        alert_context = {
-            "action": "卖出",
-            "rsi": rsi,
-            "price": price,
-            "market_date": latest_date,
-            "period": RSI_PERIOD,
-            "buy_threshold": RSI_BUY_THRESHOLD,
-            "sell_threshold": RSI_SELL_THRESHOLD,
-            "backtest_return": classic_return,
-            "backtest_annual": classic_annual,
-        }
+        classic_signal = "卖出"
     else:
+        classic_signal = "持有"
         print(f"RSI 在正常范围内 ({RSI_BUY_THRESHOLD}-{RSI_SELL_THRESHOLD})，无需发送提醒。")
 
-    if subject:
-        print(f"触发条件，准备发送邮件: {subject}")
+    if classic_signal in ("买入", "卖出"):
+        alerts.append(build_trade_alert(
+            classic_signal, rsi, price, latest_date, RSI_PERIOD,
+            RSI_BUY_THRESHOLD, RSI_SELL_THRESHOLD,
+            classic_return, classic_annual, "经典回测策略",
+            threshold_digits=0,
+        ))
+
+    if dynamic_signal and dynamic_signal["signal"] in ("买入", "卖出"):
+        alerts.append(build_trade_alert(
+            dynamic_signal["signal"], dynamic_rsi, price, latest_date, dynamic_params["rsi_period"],
+            dynamic_signal["buy_threshold"], dynamic_signal["sell_threshold"],
+            dynamic_return, dynamic_annual, "动态调优策略",
+            subject_prefix="动态调优", volatility=dynamic_signal["volatility"],
+        ))
+    elif dynamic_signal:
+        print(
+            f"动态调优 RSI 在正常范围内 "
+            f"({dynamic_signal['buy_threshold']}-{dynamic_signal['sell_threshold']})，无需发送提醒。"
+        )
+    else:
+        print("动态调优信号计算失败，跳过动态提醒。")
+
+    if alerts:
         subscribers = fetch_subscriber_emails()
         if not subscribers:
             print("没有配置订阅者邮箱，无法发送。")
-        
-        send_email_batches(subscribers, subject, content, alert_context)
-            
-        # 发送微信通知
-        send_wechat(subject, content)
+
+        for alert in alerts:
+            print(f"触发条件，准备发送邮件: {alert['subject']}")
+            send_email_batches(subscribers, alert["subject"], alert["content"], alert["context"])
+
+            print(f"触发条件，准备发送微信通知: {alert['subject']}")
+            send_wechat(alert["subject"], alert["content"])
 
     # ==========================================
     # 生成静态数据文件 (供 GitHub Pages 使用)
@@ -863,9 +921,6 @@ def main():
         signal = "持有"
         signal_color = "#3b82f6"  # 蓝色
     
-    dynamic_params = load_dynamic_params()
-    dynamic_signal = compute_dynamic_signal(rsi, market_df["close"] if market_df is not None else None, dynamic_params)
-
     data = {
         "etf_code": ETF_CODE,
         "etf_name": ETF_NAME,
@@ -892,7 +947,7 @@ def main():
         "etf_name": ETF_NAME,
         "market_date": latest_date,
         "price": round(price, 4) if price else None,
-        "rsi": round(rsi, 2),
+        "rsi": round(dynamic_rsi, 2) if dynamic_rsi is not None else None,
         "rsi_period": dynamic_params["rsi_period"],
         "rsi_buy_base": dynamic_params["rsi_buy_base"],
         "rsi_sell_base": dynamic_params["rsi_sell_base"],
