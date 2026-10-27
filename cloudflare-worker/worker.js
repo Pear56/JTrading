@@ -184,6 +184,8 @@ async function sendConfirmationEmail(env, toEmail) {
     .unsubscribe { color: #95a5a6; text-decoration: none; }
     h1 { margin: 0; font-size: 24px; }
     .icon { font-size: 48px; margin-bottom: 10px; }
+    .strategy { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin: 14px 0; }
+    .strategy-title { font-weight: 700; margin-bottom: 8px; }
   </style>
 </head>
 <body>
@@ -193,12 +195,20 @@ async function sendConfirmationEmail(env, toEmail) {
   </div>
   <div class="content">
     <p>您好！</p>
-    <p>感谢您订阅 <strong>JTrading RSI 监控</strong> 服务！</p>
-    <p>从现在起，当 <strong>红利低波ETF (512890)</strong> 的 RSI 指标触发以下条件时，您将收到邮件通知：</p>
-    <ul>
-      <li>🟢 <strong>买入信号</strong>：RSI &lt; 40（超卖区域）</li>
-      <li>🔴 <strong>卖出信号</strong>：RSI &gt; 70（超买区域）</li>
-    </ul>
+    <p>感谢您订阅 <strong>JTrading RSI 双策略监控</strong> 服务！</p>
+    <p>从现在起，当 <strong>红利低波ETF (512890)</strong> 的经典策略或动态调优策略触发买卖信号时，您将收到邮件通知。</p>
+    <div class="strategy">
+      <div class="strategy-title">📊 经典固定阈值策略</div>
+      <ul>
+        <li>🟢 <strong>买入信号</strong>：RSI &lt; 32</li>
+        <li>🔴 <strong>卖出信号</strong>：RSI &gt; 77</li>
+      </ul>
+    </div>
+    <div class="strategy">
+      <div class="strategy-title">⚡ RSI + 波动率动态调优策略</div>
+      <p>系统会读取每周最新优化参数，并结合当日年化波动率计算动态买入和卖出阈值。</p>
+      <p>动态策略提醒会列出当日 RSI、实时动态阈值和波动率，方便您核对触发原因。</p>
+    </div>
     <p style="text-align: center;">
       <a href="https://pear56.github.io/JTrading/" class="btn">查看实时监控面板</a>
     </p>
@@ -223,7 +233,7 @@ async function sendConfirmationEmail(env, toEmail) {
     body: JSON.stringify({
       from: `JTrading <${senderEmail}>`,
       to: [toEmail],
-      subject: '✅ 订阅成功 - JTrading RSI 监控服务',
+      subject: '✅ 订阅成功 - JTrading RSI 双策略监控',
       html: htmlContent
     })
   });

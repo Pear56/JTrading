@@ -111,15 +111,10 @@ def update_gist_content(new_content):
 # ==========================================
 # 邮件发送
 # ==========================================
-def send_confirmation_email(to_email):
-    """发送订阅确认邮件"""
-    if not SENDER_EMAIL or not SENDER_PASSWORD:
-        print("邮件发送配置不完整")
-        return False
-    
+def build_confirmation_html(to_email):
+    """构建与当前经典、动态双策略监控一致的订阅确认邮件。"""
     unsubscribe_email = SENDER_EMAIL
-    
-    html_content = f"""
+    return f"""
 <!DOCTYPE html>
 <html>
 <head>
@@ -133,6 +128,8 @@ def send_confirmation_email(to_email):
     .unsubscribe {{ color: #95a5a6; text-decoration: none; }}
     h1 {{ margin: 0; font-size: 24px; }}
     .icon {{ font-size: 48px; margin-bottom: 10px; }}
+    .strategy {{ background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin: 14px 0; }}
+    .strategy-title {{ font-weight: 700; margin-bottom: 8px; }}
   </style>
 </head>
 <body>
@@ -142,12 +139,20 @@ def send_confirmation_email(to_email):
   </div>
   <div class="content">
     <p>您好！</p>
-    <p>感谢您订阅 <strong>JTrading RSI 监控</strong> 服务！</p>
-        <p>从现在起，当 <strong>红利低波ETF (512890)</strong> 的 RSI 指标触发以下条件时，您将收到邮件通知：</p>
-        <ul>
-            <li>🟢 <strong>买入信号</strong>：RSI &lt; {BUY_THRESHOLD}</li>
-            <li>🔴 <strong>卖出信号</strong>：RSI &gt; {SELL_THRESHOLD}</li>
-        </ul>
+    <p>感谢您订阅 <strong>JTrading RSI 双策略监控</strong> 服务！</p>
+    <p>从现在起，当 <strong>红利低波ETF (512890)</strong> 的经典策略或动态调优策略触发买卖信号时，您将收到邮件通知。</p>
+    <div class="strategy">
+      <div class="strategy-title">📊 经典固定阈值策略</div>
+      <ul>
+        <li>🟢 <strong>买入信号</strong>：RSI &lt; {BUY_THRESHOLD}</li>
+        <li>🔴 <strong>卖出信号</strong>：RSI &gt; {SELL_THRESHOLD}</li>
+      </ul>
+    </div>
+    <div class="strategy">
+      <div class="strategy-title">⚡ RSI + 波动率动态调优策略</div>
+      <p>系统会读取每周最新优化参数，并结合当日年化波动率计算动态买入和卖出阈值。</p>
+      <p>动态策略提醒会列出当日 RSI、实时动态阈值和波动率，方便您核对触发原因。</p>
+    </div>
     <p style="text-align: center;">
       <a href="https://pear56.github.io/JTrading/" class="btn">查看实时监控面板</a>
     </p>
@@ -163,11 +168,20 @@ def send_confirmation_email(to_email):
 </html>
     """.strip()
 
+
+def send_confirmation_email(to_email):
+    """发送订阅确认邮件"""
+    if not SENDER_EMAIL or not SENDER_PASSWORD:
+        print("邮件发送配置不完整")
+        return False
+
+    html_content = build_confirmation_html(to_email)
+
     try:
         msg = MIMEMultipart('alternative')
         msg['From'] = f"JTrading <{SENDER_EMAIL}>"
         msg['To'] = to_email
-        msg['Subject'] = Header("✅ 订阅成功 - JTrading RSI 监控服务", 'utf-8')
+        msg['Subject'] = Header("✅ 订阅成功 - JTrading RSI 双策略监控", 'utf-8')
         
         # 添加 HTML 内容
         msg.attach(MIMEText(html_content, 'html', 'utf-8'))
